@@ -1,0 +1,11 @@
+environment: "Development"
+
+producer:
+  port: 9000
+  connectionString: ""
+
+consumer:
+  bootstrapServer: localhost:9093
+  groupId: worker_consumer_group
+  topic: kafka_poc_server.dbo.Customers
+  slackBaseUrl: slackBaseUrl

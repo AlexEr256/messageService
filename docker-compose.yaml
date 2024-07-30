@@ -1,0 +1,97 @@
+version: '3'
+
+services:
+  postgres:
+    image: debezium/postgres
+    container_name: postgres
+    networks:
+      - message-service
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: "root"
+      POSTGRES_PASSWORD: "root"
+
+  zookeeper:
+    container_name: zookeeper
+    image: confluentinc/cp-zookeeper:latest
+    networks:
+      - message-service    
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    container_name: kafka
+    image: confluentinc/cp-kafka:latest
+    depends_on:
+      - zookeeper
+      - postgres
+    networks:
+      - message-service
+    ports:
+      - "9093:9093"
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_LOG_CLEANER_DELETE_RETENTION_MS: 5000
+      KAFKA_BROKER_ID: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
+
+  debezium_connect:
+    container_name: debezium_connect
+    image: debezium/connect:latest
+    networks:
+      - message-service
+    ports:
+      - "8083:8083"
+    environment:
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      BOOTSTRAP_SERVERS: kafka:9092
+      HOST_NAME: debezium_connect
+    depends_on:
+      - zookeeper
+      - kafka
+      - postgres
+
+  control-center:
+    container_name: control-center
+    image: confluentinc/cp-enterprise-control-center:latest
+    networks:
+      - message-service
+    depends_on:
+      - kafka
+      - zookeeper
+      - debezium_connect
+      - postgres
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka:9092
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_CONNECT_CLUSTER: http://debezium_connect:8083
+      PORT: 9021
+
+  producer:
+    build:
+      context: .
+    restart: on-failure
+    networks:
+      - message-service
+    depends_on:
+      - kafka
+      - zookeeper
+      - debezium_connect
+      - postgres
+    ports:
+      - "3000:3000"
+
+networks:
+  message-service:
+    driver: bridge
