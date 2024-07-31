@@ -9,8 +9,9 @@ services:
     ports:
       - 5432:5432
     environment:
-      POSTGRES_USER: "root"
-      POSTGRES_PASSWORD: "root"
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres"
 
   zookeeper:
     container_name: zookeeper
@@ -25,6 +26,7 @@ services:
   kafka:
     container_name: kafka
     image: confluentinc/cp-kafka:latest
+    restart: on-failure
     depends_on:
       - zookeeper
       - postgres
@@ -35,6 +37,7 @@ services:
     environment:
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      #KAFKA_ADVERTISED_LISTENERS
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -45,6 +48,7 @@ services:
   debezium_connect:
     container_name: debezium_connect
     image: debezium/connect:latest
+    restart: on-failure
     networks:
       - message-service
     ports:
@@ -81,7 +85,8 @@ services:
   producer:
     build:
       context: .
-    restart: on-failure
+      dockerfile: Dockerfile.producer
+    restart: always
     networks:
       - message-service
     depends_on:
@@ -91,6 +96,30 @@ services:
       - postgres
     ports:
       - "3000:3000"
+
+  consumer-db:
+    image: debezium/postgres
+    container_name: consumer
+    networks:
+      - message-service
+    ports:
+      - 6432:5432
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "consumer"
+      POSTGRES_PASSWORD: "consumer"
+
+  consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    restart: always
+    networks:
+      - message-service
+    depends_on:
+      - consumer-db
+    ports:
+      - "3100:3100"
 
 networks:
   message-service:

@@ -10,9 +10,10 @@ RUN go mod download
 
 COPY . ./
 
-RUN go build -o ./bin/app cmd/main.go
+RUN go build -o ./bin/app producer/cmd/main.go
 
 FROM alpine 
 
+COPY --from=builder /usr/local/src/.env /
 COPY --from=builder /usr/local/src/bin/app /
 CMD ["/app"]
