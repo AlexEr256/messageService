@@ -2,15 +2,15 @@
 # Выбор архитектуры
 При выборе стоит выбор между 3 паттернами:
 
-![2PC](https://github.com/AlexEr256/messageService/tree/master/assets/2pc.png "Двухфазный коммит")
+![2PC](./assets/2pc.png "Двухфазный коммит")
 
 Данный паттерн обеспечивает сильную согласованность, однако плохо масштабируется и очень медленный.
 
-![Multi Write](https://github.com/AlexEr256/messageService/tree/master/assets/multi-write.png "Мульти запись")
+![Multi Write](./assets/multi-write.png "Мульти запись")
 
 Самый простой паттерн - однако писать из сервиса B в сервис A плохая идея: правки в схеме A сломают сервис B.
 
-![Debezium](https://github.com/AlexEr256/messageService/tree/master/assets/debezium.png "Двухфазный коммит")
+![Debezium](./assets/debezium.png "Двухфазный коммит")
 
 Недостаток - множественная доставка.
 
